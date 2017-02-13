@@ -1,15 +1,15 @@
 'use strict'
-import React from 'react';
-import { storiesOf, action, linkTo } from '@kadira/storybook';
+import React from 'react'
+import { storiesOf, action, linkTo } from '@kadira/storybook'
 import { Provider } from 'react-redux'
 import store from '../redux/store'
 
-import Welcome from './Welcome';
-import Button from './Button';
-import Calendar from './Calendar';
+import Welcome from './Welcome'
+import Button from './Button'
+import Calendar from './Calendar'
 
 storiesOf('Calendar', module)
-  .addDecorator((getStory) => 
+  .addDecorator((getStory) =>
     <Provider store={store}>{getStory()}</Provider>
   )
   .add('Default', () => (
@@ -18,8 +18,8 @@ storiesOf('Calendar', module)
 
 storiesOf('Welcome', module)
   .add('to Storybook', () => (
-    <Welcome showApp={linkTo('Button')}/>
-  ));
+    <Welcome showApp={linkTo('Button')} />
+  ))
 
 storiesOf('Button', module)
   .add('with text', () => (
@@ -27,4 +27,4 @@ storiesOf('Button', module)
   ))
   .add('with some emoji', () => (
     <Button onClick={action('clicked')}>😀 😎 👍 💯</Button>
-  ));
+  ))

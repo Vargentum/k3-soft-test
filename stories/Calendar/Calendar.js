@@ -1,17 +1,22 @@
 'use strict'
 import React, { Component, PropTypes as PT } from 'react'
 import R from 'ramda'
-import {connect} from 'react-redux'
+import { connect } from 'react-redux'
 
 export class Calendar extends Component {
-  static propTypes = {}
+  static propTypes = {
+    children: PT.element
+  }
   static defaultProps = {}
 
-  render() {
-    const {} = this.props
+  render () {
+    const { children } = this.props
 
     return (
-      <div>Hello Calendar</div>
+      <div>
+        Hello
+        {children}
+      </div>
     )
   }
 }
