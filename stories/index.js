@@ -6,7 +6,9 @@ import store from '../redux/store'
 
 import Welcome from './Welcome'
 import Button from './Button'
+
 import Calendar from './Calendar'
+import basicData from '../fixtures/basic.json'
 
 storiesOf('Calendar', module)
   .addDecorator((getStory) =>

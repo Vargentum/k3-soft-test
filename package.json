@@ -14,11 +14,18 @@
   "license": "MIT",
   "dependencies": {
     "create-reducer-map": "^0.1.4",
+    "css-loader": "^0.26.1",
+    "date-format-utils": "^2.2.0",
+    "json-loader": "^0.5.4",
+    "lodash": "^4.17.4",
+    "path": "^0.12.7",
     "ramda": "^0.23.0",
     "react": "^15.4.2",
     "react-dom": "^15.4.2",
     "react-redux": "^5.0.2",
-    "redux": "^3.6.0"
+    "redux": "^3.6.0",
+    "style-loader": "^0.13.1",
+    "stylus-loader": "^2.4.0"
   },
   "devDependencies": {
     "@kadira/storybook": "^2.21.0",
