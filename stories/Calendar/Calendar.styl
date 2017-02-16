@@ -1,3 +1,68 @@
 .Calendar
-  color: red
-  border: 1px solid red
+  $c = {
+    text: #6C464F
+    border: #2C4251
+    cell: #9E768F
+    cellActive: #6C464F
+    reserve: #C1C1C1
+  }
+
+  &, *
+    margin: 0
+    padding: 0
+    box-sizing: border-box
+
+  &
+    width: 100%
+    font: 14px sans-serif
+    border-collapse collapse
+    table-layout fixed
+    color: $c.text
+    
+
+  &__cell
+    height: 50px
+    vertical-align: middle
+    text-align center
+    border: 1px solid $c.reserve
+    background-color: $c.cell
+    
+    &.isSelected
+      background-color: $c.cellActive
+  
+  &__dayLabel
+    width 10%
+    min-width: 50px
+    text-transform: uppercase
+    color: #666
+    font-size 18px
+    color: $c.cellActive
+
+  &__daySelectAll
+    min-width: 50px
+    width 10%
+    background-color: $c.cellActive
+
+  &__dayHour
+    pass()
+    
+  &__caption
+    font-weight: normal
+    height: 40px
+
+  &__captionAllDay
+    text-transform: uppercase
+
+  &__captionDayHour
+    position relative
+    padding: 0 5px
+    &:before
+      content ''
+      display: block
+      position absolute
+      bottom 0
+      left -1px
+      height: 10px
+      border-left: 2px solid $c.border
+
+    

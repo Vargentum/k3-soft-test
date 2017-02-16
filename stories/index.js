@@ -15,7 +15,10 @@ storiesOf('Calendar', module)
     <Provider store={store}>{getStory()}</Provider>
   )
   .add('Default', () => (
-    <Calendar />
+    <Calendar 
+      data={basicData} 
+      onDateSet={action}
+    />
   ))
 
 storiesOf('Welcome', module)
