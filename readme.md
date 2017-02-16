@@ -1,9 +1,11 @@
 Calendar for K3-soft
 =======================
 
-### How to run
+### Prerequirements
 `npm i -g getstorybook`
 `getstorybook`
 
+### Develop
+`npm run storybook`
 
 ##### Build with [React StoryBook](https://getstorybook.io/)
