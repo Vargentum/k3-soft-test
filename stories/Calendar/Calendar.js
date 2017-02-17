@@ -6,6 +6,7 @@ import {toArray} from 'lodash'
 import './Calendar.styl'
 import {connect} from 'react-redux'
 import {
+  utils,
   DAY_KEYS, DAY_HOURS_LIST, MINUTES_IN_HOUR, 
   initCalendarSelection, clearCalendarSelection, toggleHourSelection, toggleDaySelection
 } from './calendar-reducer'
@@ -44,23 +45,22 @@ export class Calendar extends Component {
     label.setMinutes(0)
     return dateUtil.formatDate(label, hourLabelFormat)
   }
-  rDayHours ({selectedMinutes, dayKey}) {
+  rDayHours ({selections, dayKey}) {
     const {bemBlockName, toggleHourSelection} = this.props
     return (hour) => {
-      const cellMinutes = hour * MINUTES_IN_HOUR
-      const owningSelectionIdx = R.findIndex(Calendar.findOwningSelection(cellMinutes), selectedMinutes)
-      const owningSelection = selectedMinutes[owningSelectionIdx]
+      const owningSelectionIdx = R.findIndex(utils.findHourOwningSelection(hour), selections)
+      const owningSelection = selections[owningSelectionIdx]
       return <td
         className={cls(`${bemBlockName}__cell ${bemBlockName}__dayHour`, {
           isSelected: owningSelection
         })}
         onClick={R.partial(toggleHourSelection, [{
-          dayKey, cellMinutes, owningSelection, owningSelectionIdx
+          dayKey, hour, owningSelection, owningSelectionIdx
         }])}
         key={hour} />
     }
   }
-  rDay(selectedMinutes, dayKey) {
+  rDay(selections, dayKey) {
     const {hourScaleGap, bemBlockName} = this.props
     const row = {
       label: <td
@@ -73,7 +73,7 @@ export class Calendar extends Component {
         colSpan={hourScaleGap}
       />,
 
-      hours: R.map(this.rDayHours({selectedMinutes, dayKey}), DAY_HOURS_LIST)
+      hours: R.map(this.rDayHours({selections, dayKey}), DAY_HOURS_LIST)
     }
     return <tr key={dayKey}>
       {row.label}
@@ -129,7 +129,6 @@ export class Calendar extends Component {
     )
   }
 }
-Calendar.findOwningSelection = (val) => ({bt, et}) => val >= bt && val < et
 
 export default R.pipe(
   connect(

@@ -3,6 +3,22 @@ import R from 'ramda'
 // import {Calendar} from './Calendar'
 
 // ------------------------------------
+// Utils
+// ------------------------------------
+export const utils = {
+  findHourOwningSelection: (hour) => ({bt, et}) => {
+    const minutes = hour * MINUTES_IN_HOUR
+    return minutes >= bt && minutes < et
+  }
+  ,genAtomicSelection: (hour) => ({bt: hour * MINUTES_IN_HOUR, et: (hour + 1) * MINUTES_IN_HOUR - 1})
+}
+
+utils.genHourlyBreakedSelection = (selection) => (hourIncrement) => {
+  const eachHour = hourIncrement + selection.bt / MINUTES_IN_HOUR
+  return utils.genAtomicSelection(eachHour)
+}
+
+// ------------------------------------
 // Constants
 // ------------------------------------
 export const DAY_HOURS_LIST = R.range(0, 24)
@@ -38,8 +54,6 @@ export const toggleDaySelection = ({day}) => ({
 // ------------------------------------
 // Reducer
 // ------------------------------------
-const genSelectionFromMinutes = (minutes) => ({bt: minutes, et: minutes + MINUTES_IN_HOUR - 1})
-
 const initialState = {}
 
 export default createReducer(initialState, {
@@ -48,18 +62,25 @@ export default createReducer(initialState, {
   ,[TOGGLE_DAY_SELECTION]: (state, {day}) => {
 
   }
-  ,[TOGGLE_HOUR_SELECTION]: (state, {dayKey, cellMinutes, owningSelection, owningSelectionIdx}) => {
+  ,[TOGGLE_HOUR_SELECTION]: (state, {dayKey, hour, owningSelection, owningSelectionIdx}) => {
     const daySelectedRange = state[dayKey]
-    const selectedRange = genSelectionFromMinutes(cellMinutes)
     let daySelectedRangeNew;
     if (owningSelection) {
-      /*TODO: deselect*/
-      return state
+      const owningSelectionDuration = (owningSelection.et + 1 - owningSelection.bt) / MINUTES_IN_HOUR
+      const hourlyBreakedOwningSelection = R.times(
+        utils.genHourlyBreakedSelection(owningSelection),
+        owningSelectionDuration
+      )
+      const owningWithoutDeselected = R.reject(utils.findHourOwningSelection(hour), hourlyBreakedOwningSelection)
+      daySelectedRangeNew = R.pipe(
+        R.update(owningSelectionIdx, owningWithoutDeselected),
+        R.flatten
+      )(daySelectedRange)
     }
     else {
+      const selectedRange = utils.genAtomicSelection(hour)
       daySelectedRangeNew = R.append(selectedRange, daySelectedRange)
     }
-    console.log(daySelectedRangeNew, dayKey, daySelectedRange, `daySelectedRangeNew---------`)
     /*TODO: apply merger*/
     return R.assoc(dayKey, daySelectedRangeNew, state)
   }
