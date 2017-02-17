@@ -13,6 +13,7 @@
   "author": "Vargentum <vargentum@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "classnames": "^2.2.5",
     "create-reducer-map": "^0.1.4",
     "css-loader": "^0.26.1",
     "date-format-utils": "^2.2.0",
