@@ -11,6 +11,13 @@ export const utils = {
     return minutes >= bt && minutes < et
   }
   ,genAtomicSelection: (hour) => ({bt: hour * MINUTES_IN_HOUR, et: (hour + 1) * MINUTES_IN_HOUR - 1})
+  ,collapseAtomicSelections: R.reduce((acc, next) => {
+    const currentIdx = acc.length - 1
+    const current = acc[currentIdx]
+    return current && next && (current.et + 1 === next.bt)
+      ? R.update(currentIdx, R.assoc('et', next.et, current), acc)
+      : R.append(next, acc)
+  }, [])
 }
 
 utils.genHourlyBreakedSelection = (selection) => (hourIncrement) => {
@@ -79,9 +86,12 @@ export default createReducer(initialState, {
     }
     else {
       const selectedRange = utils.genAtomicSelection(hour)
-      daySelectedRangeNew = R.append(selectedRange, daySelectedRange)
+      daySelectedRangeNew = R.pipe(
+        R.append(selectedRange),
+        R.sortBy(R.prop('bt')) //for proper `collapse` applying
+      )(daySelectedRange)
     }
-    /*TODO: apply merger*/
-    return R.assoc(dayKey, daySelectedRangeNew, state)
+    const collapsedSelections = utils.collapseAtomicSelections(daySelectedRangeNew)
+    return R.assoc(dayKey, collapsedSelections, state)
   }
 })
