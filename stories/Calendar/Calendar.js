@@ -8,7 +8,7 @@ import {connect} from 'react-redux'
 import {
   utils,
   DAY_KEYS, DAY_HOURS_LIST, MINUTES_IN_HOUR, MINUTES_IN_DAY,
-  initCalendarSelection, clearCalendarSelection, toggleHourSelection, toggleDaySelection
+  actions as calendarActions
 } from './calendar-reducer'
 import cls from 'classnames'
 
@@ -38,6 +38,13 @@ export class Calendar extends Component {
     const {initialSelectionData, initCalendarSelection, hourScaleGap} = this.props
     initCalendarSelection(initialSelectionData)
   }
+  componentWillUpdate (nextProps, nextState) {
+    const {selectionRange, add2dSelection} = this.props  
+    if (nextProps.selectionRange !== selectionRange && nextProps.selectionRange.isComplete) {
+      add2dSelection(selectionRange)
+    }
+  }
+
   toReadableHourLabel(hour) {
     const {hourLabelFormat} = this.props
     const label = new Date()
@@ -45,8 +52,8 @@ export class Calendar extends Component {
     label.setMinutes(0)
     return dateUtil.formatDate(label, hourLabelFormat)
   }
-  rDayHours ({selections, dayKey}) {
-    const {bemBlockName, toggleHourSelection} = this.props
+  rDayHour ({selections, dayKey, dayIdx}) {
+    const {bemBlockName, toggleHourSelection, mouseSelectionEnd, mouseSelectionStart} = this.props
     return (hour) => {
       const owningSelectionIdx = R.findIndex(utils.findHourOwningSelection(hour), selections)
       const owningSelection = selections[owningSelectionIdx]
@@ -54,6 +61,12 @@ export class Calendar extends Component {
         className={cls(`${bemBlockName}__cell ${bemBlockName}__dayHour`, {
           isSelected: owningSelection
         })}
+        onMouseOver={({shiftKey}) => {
+          const cellCoords = {x: hour, y: dayIdx}
+          shiftKey 
+            ? mouseSelectionEnd(cellCoords)
+            : mouseSelectionStart(cellCoords)
+        }}
         onClick={R.partial(toggleHourSelection, [{
           dayKey, hour, owningSelection, owningSelectionIdx
         }])}
@@ -61,9 +74,10 @@ export class Calendar extends Component {
     }
   }
   rDay(selections, dayKey) {
-    const {hourScaleGap, bemBlockName, toggleDaySelection} = this.props
-    const isAllDaySelected = R.pipe(R.head, utils.checkAllDaySelection)(selections)
+    const {hourScaleGap, bemBlockName, toggleDaySelection, selectionData} = this.props
+    const dayIdx = R.findIndex(R.equals(dayKey), DAY_KEYS)
     const isAnyHourSelected = selections.length
+    const isAllDaySelected = isAnyHourSelected && R.pipe(R.head, utils.checkAllDaySelection)(selections)
     const row = {
       label: <td
         className={cls(`${bemBlockName}__cell ${bemBlockName}__dayKey`, {
@@ -78,7 +92,7 @@ export class Calendar extends Component {
         onClick={R.partial(toggleDaySelection, [{dayKey, isAllDaySelected}])}
         >{isAllDaySelected ? '-' : '+'}</td>,
 
-      hours: R.map(this.rDayHours({selections, dayKey}), DAY_HOURS_LIST)
+      hours: R.map(this.rDayHour({selections, dayKey, dayIdx}), DAY_HOURS_LIST)
     }
     return <tr key={dayKey}>
       {row.label}
@@ -138,8 +152,9 @@ export class Calendar extends Component {
 export default R.pipe(
   connect(
     (state) => ({
-      selectionData: state.calendar
+      selectionData: state.calendar.selectionData,
+      selectionRange: state.calendar.selectionRange,
     }),
-    {initCalendarSelection, clearCalendarSelection, toggleHourSelection, toggleDaySelection}
+    calendarActions
   )
 )(Calendar)
