@@ -7,7 +7,7 @@ import './Calendar.styl'
 import {connect} from 'react-redux'
 import {
   utils,
-  DAY_KEYS, DAY_HOURS_LIST, MINUTES_IN_HOUR, 
+  DAY_KEYS, DAY_HOURS_LIST, MINUTES_IN_HOUR, MINUTES_IN_DAY,
   initCalendarSelection, clearCalendarSelection, toggleHourSelection, toggleDaySelection
 } from './calendar-reducer'
 import cls from 'classnames'
@@ -25,7 +25,7 @@ export class Calendar extends Component {
   static defaultProps = {
     onDateSet: R.identity,
     hourScaleGap: 3,
-    hourLabelFormat: 'HH:mm',
+    hourLabelFormat: 'HH:mm', // https://www.npmjs.com/package/date-format-utils
     bemBlockName: 'Calendar',
     initialSelectionData: R.map(R.always([]))(DAY_KEYS)
   }
@@ -61,17 +61,22 @@ export class Calendar extends Component {
     }
   }
   rDay(selections, dayKey) {
-    const {hourScaleGap, bemBlockName} = this.props
+    const {hourScaleGap, bemBlockName, toggleDaySelection} = this.props
+    const isAllDaySelected = R.pipe(R.head, utils.checkAllDaySelection)(selections)
+    const isAnyHourSelected = selections.length
     const row = {
       label: <td
-        className={`${bemBlockName}__cell ${bemBlockName}__dayKey`}
+        className={cls(`${bemBlockName}__cell ${bemBlockName}__dayKey`, {
+          isSelected: isAnyHourSelected
+        })}
         colSpan={hourScaleGap}
         >{dayKey}</td>,
 
       allDay: <td
         className={`${bemBlockName}__cell ${bemBlockName}__daySelectAll`}
         colSpan={hourScaleGap}
-      />,
+        onClick={R.partial(toggleDaySelection, [{dayKey, isAllDaySelected}])}
+        >{isAllDaySelected ? '-' : '+'}</td>,
 
       hours: R.map(this.rDayHours({selections, dayKey}), DAY_HOURS_LIST)
     }

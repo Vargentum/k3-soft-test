@@ -17,7 +17,8 @@ export const utils = {
     return current && next && (current.et + 1 === next.bt)
       ? R.update(currentIdx, R.assoc('et', next.et, current), acc)
       : R.append(next, acc)
-  }, [])
+  }, []),
+  checkAllDaySelection: (sel) => sel && sel.bt === 0 && sel.et === MINUTES_IN_DAY - 1
 }
 
 utils.genHourlyBreakedSelection = (selection) => (hourIncrement) => {
@@ -31,6 +32,7 @@ utils.genHourlyBreakedSelection = (selection) => (hourIncrement) => {
 export const DAY_HOURS_LIST = R.range(0, 24)
 export const DAY_KEYS = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su']
 export const MINUTES_IN_HOUR = 60
+export const MINUTES_IN_DAY = DAY_HOURS_LIST.length * MINUTES_IN_HOUR
 
 const NAMESPACE = 'calendar/'
 const TOGGLE_HOUR_SELECTION = NAMESPACE + 'TOGGLE_HOUR_SELECTION'
@@ -53,9 +55,9 @@ export const toggleHourSelection = (payload) => ({
   type: TOGGLE_HOUR_SELECTION,
   payload
 })
-export const toggleDaySelection = ({day}) => ({
+export const toggleDaySelection = (payload) => ({
   type: TOGGLE_DAY_SELECTION,
-  payload: {day}
+  payload: payload
 })
 
 // ------------------------------------
@@ -66,8 +68,11 @@ const initialState = {}
 export default createReducer(initialState, {
   [INIT_CALENDAR_SELECTION]: (state, {selectionData}) => selectionData
   ,[CLEAR_CALENDAR_SELECTION]: (state) => initialState
-  ,[TOGGLE_DAY_SELECTION]: (state, {day}) => {
-
+  ,[TOGGLE_DAY_SELECTION]: (state, {dayKey, isAllDaySelected}) => {
+    const day = isAllDaySelected
+      ? []
+      : [{bt: 0, et: MINUTES_IN_DAY - 1}]
+    return R.assoc(dayKey, day, state)
   }
   ,[TOGGLE_HOUR_SELECTION]: (state, {dayKey, hour, owningSelection, owningSelectionIdx}) => {
     const daySelectedRange = state[dayKey]
@@ -88,7 +93,7 @@ export default createReducer(initialState, {
       const selectedRange = utils.genAtomicSelection(hour)
       daySelectedRangeNew = R.pipe(
         R.append(selectedRange),
-        R.sortBy(R.prop('bt')) //for proper `collapse` applying
+        R.sortBy(R.prop('bt')) // for proper `collapse` applying
       )(daySelectedRange)
     }
     const collapsedSelections = utils.collapseAtomicSelections(daySelectedRangeNew)
