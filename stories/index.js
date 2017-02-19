@@ -16,6 +16,7 @@ storiesOf('Calendar', module)
   )
   .add('Default', () => (
     <Calendar 
+      id="demo-calendar"
       initialSelectionData={basicData} 
       onDateSet={action}
     />

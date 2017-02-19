@@ -7,7 +7,7 @@ import './Calendar.styl'
 import {connect} from 'react-redux'
 import {
   util,
-  DAY_KEYS, DAY_HOURS_LIST, MINUTES_IN_HOUR, MINUTES_IN_DAY,
+  DAY_KEYS, DAY_HOURS_LIST, MINUTES_IN_HOUR, MINUTES_IN_DAY, EMPTY_DAYS_SELECTION,
   actions as calendarActions
 } from './calendar-reducer'
 import cls from 'classnames'
@@ -16,8 +16,8 @@ import { SelectableGroup, createSelectable } from 'react-selectable';
 
 export class Calendar extends Component {
   static propTypes = {
+    id: PT.string.isRequired,
     initialSelectionData: PT.object,
-    selectionData: PT.object.isRequired,
     onDateSet: PT.func,
     hourScaleGap: PT.number,
     hourLabelFormat: PT.string,
@@ -28,16 +28,18 @@ export class Calendar extends Component {
     hourScaleGap: 3,
     hourLabelFormat: 'HH:mm', // https://www.npmjs.com/package/date-format-utils
     bemBlockName: 'Calendar',
-    initialSelectionData: R.map(R.always([]))(DAY_KEYS)
+    initialSelectionData: EMPTY_DAYS_SELECTION
   }
   constructor(props) {
     super(props);
     this.rDay = this.rDay.bind(this)
     this.rCaptionHours = this.rCaptionHours.bind(this)
+    this.handleClear = this.handleClear.bind(this)
+    this.handleMouseSelection = this.handleMouseSelection.bind(this)
   }
   componentWillMount () {
-    const {initialSelectionData, initCalendarSelection, hourScaleGap} = this.props
-    initCalendarSelection(initialSelectionData)
+    const {id, initialSelectionData, initCalendarSelection, hourScaleGap} = this.props
+    initCalendarSelection({id, initialSelectionData})
   }
   toReadableHourLabel(hour) {
     const {hourLabelFormat} = this.props
@@ -47,7 +49,7 @@ export class Calendar extends Component {
     return dateUtil.formatDate(label, hourLabelFormat)
   }
   rDayHour ({selections, dayKey, dayIdx}) {
-    const {bemBlockName, toggleHourSelection, mouseSelectionEnd, mouseSelectionStart} = this.props
+    const {id, bemBlockName, toggleHourSelection} = this.props
     return ({hour}) => {
       const owningSelectionIdx = R.findIndex(util.findHourOwningSelection(hour), selections)
       const owningSelection = selections[owningSelectionIdx]
@@ -56,18 +58,17 @@ export class Calendar extends Component {
           isSelected: owningSelection
         })}
         onClick={R.partial(toggleHourSelection, [{
-          dayKey, hour, owningSelection, owningSelectionIdx
+          id, dayKey, hour, owningSelection, owningSelectionIdx
         }])}
         key={hour} />
     }
   }
   rDay(selections, dayKey) {
-    const {hourScaleGap, bemBlockName, toggleDaySelection, selectionData} = this.props
+    const {id, hourScaleGap, bemBlockName, toggleDaySelection, selectionData} = this.props
     const dayIdx = R.findIndex(R.equals(dayKey), DAY_KEYS)
     const isAnyHourSelected = selections.length
     const isAllDaySelected = isAnyHourSelected && R.pipe(R.head, util.checkAllDaySelection)(selections)
-    const Hour = this.rDayHour({selections, dayKey, dayIdx})
-    const SelectableHour = createSelectable(Hour)
+    const SelectableHour = createSelectable(this.rDayHour({selections, dayKey, dayIdx}))
     const row = {
       label: <td
         className={cls(`${bemBlockName}__cell ${bemBlockName}__dayKey`, {
@@ -79,7 +80,7 @@ export class Calendar extends Component {
       allDay: <td
         className={`${bemBlockName}__cell ${bemBlockName}__daySelectAll`}
         colSpan={hourScaleGap}
-        onClick={R.partial(toggleDaySelection, [{dayKey, isAllDaySelected}])}
+        onClick={R.partial(toggleDaySelection, [{id, dayKey, isAllDaySelected}])}
         >{isAllDaySelected ? '-' : '+'}</td>,
 
       hours: R.map((hour) => {
@@ -128,12 +129,21 @@ export class Calendar extends Component {
       {caption.hours}
     </tr>
   }
+  handleClear() {
+    const {id, clearCalendarSelection} = this.props    
+    clearCalendarSelection({id})
+  }
+  handleMouseSelection(mouseSelection) {
+    const {id, selectHoursWithMouse} = this.props
+    selectHoursWithMouse({id, mouseSelection})
+  }
   render () {
-    const {selectionData, bemBlockName, selectHoursWithMouse} = this.props
+    const {id, selectionData, bemBlockName, selectHoursWithMouse, clearCalendarSelection} = this.props
 
     const bodyRows = R.pipe(R.mapObjIndexed(this.rDay), toArray)(selectionData)
     const headRow = this.rCaption()
     return (
+      <div>
         <table className={`${bemBlockName}`}>
           <thead>
             {headRow}
@@ -141,20 +151,23 @@ export class Calendar extends Component {
           <SelectableGroup 
             selectOnMouseMove={false}
             tolerance={1}
-            onSelection={(selection) => selectHoursWithMouse(selection)}
+            onSelection={this.handleMouseSelection}
             component="tbody"
             >
             {bodyRows}
           </SelectableGroup>
         </table>
+        <br />
+        <button onClick={this.handleClear}>Clear all</button>
+      </div>
     )
   }
 }
 
 export default R.pipe(
   connect(
-    (state) => ({
-      selectionData: state.calendar
+    (state, ownProps) => ({
+      selectionData: state.calendar[ownProps.id]
     }),
     calendarActions
   )

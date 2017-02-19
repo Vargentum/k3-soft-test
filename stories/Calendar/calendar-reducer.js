@@ -38,6 +38,10 @@ export const DAY_HOURS_LIST = R.range(0, 24)
 export const DAY_KEYS = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su']
 export const MINUTES_IN_HOUR = 60
 export const MINUTES_IN_DAY = DAY_HOURS_LIST.length * MINUTES_IN_HOUR
+export const EMPTY_DAYS_SELECTION = R.pipe(
+  R.map((key) => [key, []]),
+  R.fromPairs
+)(DAY_KEYS)
 
 const NAMESPACE = 'calendar/'
 const INIT_CALENDAR_SELECTION = NAMESPACE + 'INIT_CALENDAR_SELECTION'
@@ -49,12 +53,13 @@ const SELECT_HOURS_WITH_MOUSE = NAMESPACE + 'SELECT_HOURS_WITH_MOUSE'
 // ------------------------------------
 // Actions
 // ------------------------------------
-const initCalendarSelection = (selectionData) => ({
+const initCalendarSelection = (payload) => ({
   type: INIT_CALENDAR_SELECTION,
-  payload: {selectionData}
+  payload
 })
-const clearCalendarSelection = () => ({
-  type: CLEAR_CALENDAR_SELECTION
+const clearCalendarSelection = (payload) => ({
+  type: CLEAR_CALENDAR_SELECTION,
+  payload
 })
 const toggleHourSelection = (payload) => ({
   type: TOGGLE_HOUR_SELECTION,
@@ -62,11 +67,11 @@ const toggleHourSelection = (payload) => ({
 })
 const toggleDaySelection = (payload) => ({
   type: TOGGLE_DAY_SELECTION,
-  payload: payload
+  payload
 })
-const selectHoursWithMouse = (mouseSelection) => ({
+const selectHoursWithMouse = (payload) => ({
   type: SELECT_HOURS_WITH_MOUSE,
-  payload: {mouseSelection}
+  payload
 })
 
 
@@ -77,18 +82,19 @@ export const actions = {
 // ------------------------------------
 // Selection data reducer
 // ------------------------------------
-
 export default createReducer({}, {
-  [INIT_CALENDAR_SELECTION]: (state, {selectionData}) => selectionData
-  ,[CLEAR_CALENDAR_SELECTION]: (state) => {}
-  ,[TOGGLE_DAY_SELECTION]: (state, {dayKey, isAllDaySelected}) => {
+  [INIT_CALENDAR_SELECTION]: (state, {id, initialSelectionData}) => R.assoc(id, initialSelectionData, state)
+
+  ,[CLEAR_CALENDAR_SELECTION]: (state, {id}) => R.assoc(id, EMPTY_DAYS_SELECTION, state)
+
+  ,[TOGGLE_DAY_SELECTION]: (state, {id, dayKey, isAllDaySelected}) => {
     const day = isAllDaySelected
       ? []
       : [{bt: 0, et: MINUTES_IN_DAY - 1}]
-    return R.assoc(dayKey, day, state)
+    return R.assocPath([id, dayKey], day, state)
   }
-  ,[TOGGLE_HOUR_SELECTION]: (state, {dayKey, hour, owningSelection, owningSelectionIdx}) => {
-    const daySelectedRange = state[dayKey]
+  ,[TOGGLE_HOUR_SELECTION]: (state, {id, dayKey, hour, owningSelection, owningSelectionIdx}) => {
+    const daySelectedRange = R.path([id, dayKey], state)
     let daySelectedRangeNew;
     if (owningSelection) {
       const owningSelectionDuration = (owningSelection.et + 1 - owningSelection.bt) / MINUTES_IN_HOUR
@@ -110,9 +116,9 @@ export default createReducer({}, {
       )(daySelectedRange)
     }
     const collapsedSelections = util.collapseAtomicSelections(daySelectedRangeNew)
-    return R.assoc(dayKey, collapsedSelections, state)
+    return R.assocPath([id, dayKey], collapsedSelections, state)
   }
-  ,[SELECT_HOURS_WITH_MOUSE]: (state, {mouseSelection}) => {
+  ,[SELECT_HOURS_WITH_MOUSE]: (state, {id, mouseSelection}) => {
     const mergeDayWithMouseSelection = (daySelections, dayKey) => {
       const selectionsToMerge = R.pipe(
         R.filter(R.propEq('dayKey', dayKey)),
@@ -126,6 +132,7 @@ export default createReducer({}, {
       )(daySelections)
       return mergedAndCollapsedSelections 
     }
-    return R.mapObjIndexed(mergeDayWithMouseSelection)(state)
+    const newDaySelections = R.mapObjIndexed(mergeDayWithMouseSelection)(state[id])
+    return R.assoc(id, newDaySelections, state)
   }
 })
