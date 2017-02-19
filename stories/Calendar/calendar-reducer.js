@@ -1,4 +1,3 @@
-import { combineReducers } from 'redux'
 import createReducer from 'create-reducer-map'
 import R from 'ramda'
 // import {Calendar} from './Calendar'
@@ -7,21 +6,21 @@ import R from 'ramda'
 // Utils
 // ------------------------------------
 export const util = {
-  findHourOwningSelection: (hour) => ({bt, et}) => {
+  findHourOwningSelection: (hour) => ({ bt, et }) => {
     const minutes = hour * MINUTES_IN_HOUR
     return minutes >= bt && minutes < et
-  }
-  ,genAtomicSelection: (hour) => ({bt: hour * MINUTES_IN_HOUR, et: (hour + 1) * MINUTES_IN_HOUR - 1})
-  ,genAtomicSelectionRange: (h1, h2) => ({bt: h1 * MINUTES_IN_HOUR, et: h2 * MINUTES_IN_HOUR - 1})
-  ,collapseAtomicSelections: R.reduce((acc, next) => {
+  },
+  genAtomicSelection: (hour) => ({ bt: hour * MINUTES_IN_HOUR, et: (hour + 1) * MINUTES_IN_HOUR - 1 }),
+  genAtomicSelectionRange: (h1, h2) => ({ bt: h1 * MINUTES_IN_HOUR, et: h2 * MINUTES_IN_HOUR - 1 }),
+  collapseAtomicSelections: R.reduce((acc, next) => {
     const currentIdx = acc.length - 1
     const current = acc[currentIdx]
     return !current || !next || current.et + 1 < next.bt
       ? R.append(next, acc)
       : R.update(currentIdx, {
-                              bt: R.min(current.bt, next.bt),
-                              et: R.max(current.et, next.et)
-                            }, acc)
+        bt: R.min(current.bt, next.bt),
+        et: R.max(current.et, next.et)
+      }, acc)
   }, []),
   checkAllDaySelection: (sel) => sel && sel.bt === 0 && sel.et === MINUTES_IN_DAY - 1
 }
@@ -74,7 +73,6 @@ const selectHoursWithMouse = (payload) => ({
   payload
 })
 
-
 export const actions = {
   initCalendarSelection, clearCalendarSelection, toggleHourSelection, toggleDaySelection, selectHoursWithMouse
 }
@@ -83,19 +81,19 @@ export const actions = {
 // Selection data reducer
 // ------------------------------------
 export default createReducer({}, {
-  [INIT_CALENDAR_SELECTION]: (state, {id, initialSelectionData}) => R.assoc(id, initialSelectionData, state)
+  [INIT_CALENDAR_SELECTION]: (state, { id, initialSelectionData }) => R.assoc(id, initialSelectionData, state),
 
-  ,[CLEAR_CALENDAR_SELECTION]: (state, {id}) => R.assoc(id, EMPTY_DAYS_SELECTION, state)
+  [CLEAR_CALENDAR_SELECTION]: (state, { id }) => R.assoc(id, EMPTY_DAYS_SELECTION, state),
 
-  ,[TOGGLE_DAY_SELECTION]: (state, {id, dayKey, isAllDaySelected}) => {
+  [TOGGLE_DAY_SELECTION]: (state, { id, dayKey, isAllDaySelected }) => {
     const day = isAllDaySelected
       ? []
-      : [{bt: 0, et: MINUTES_IN_DAY - 1}]
+      : [{ bt: 0, et: MINUTES_IN_DAY - 1 }]
     return R.assocPath([id, dayKey], day, state)
-  }
-  ,[TOGGLE_HOUR_SELECTION]: (state, {id, dayKey, hour, owningSelection, owningSelectionIdx}) => {
+  },
+  [TOGGLE_HOUR_SELECTION]: (state, { id, dayKey, hour, owningSelection, owningSelectionIdx }) => {
     const daySelectedRange = R.path([id, dayKey], state)
-    let daySelectedRangeNew;
+    let daySelectedRangeNew
     if (owningSelection) {
       const owningSelectionDuration = (owningSelection.et + 1 - owningSelection.bt) / MINUTES_IN_HOUR
       const hourlyBreakedOwningSelection = R.times(
@@ -107,8 +105,7 @@ export default createReducer({}, {
         R.update(owningSelectionIdx, owningWithoutDeselected),
         R.flatten
       )(daySelectedRange)
-    }
-    else {
+    } else {
       const selectedRange = util.genAtomicSelection(hour)
       daySelectedRangeNew = R.pipe(
         R.append(selectedRange),
@@ -117,8 +114,8 @@ export default createReducer({}, {
     }
     const collapsedSelections = util.collapseAtomicSelections(daySelectedRangeNew)
     return R.assocPath([id, dayKey], collapsedSelections, state)
-  }
-  ,[SELECT_HOURS_WITH_MOUSE]: (state, {id, mouseSelection}) => {
+  },
+  [SELECT_HOURS_WITH_MOUSE]: (state, { id, mouseSelection }) => {
     const mergeDayWithMouseSelection = (daySelections, dayKey) => {
       const selectionsToMerge = R.pipe(
         R.filter(R.propEq('dayKey', dayKey)),
@@ -130,7 +127,7 @@ export default createReducer({}, {
         R.sortBy(R.prop('bt')),
         util.collapseAtomicSelections
       )(daySelections)
-      return mergedAndCollapsedSelections 
+      return mergedAndCollapsedSelections
     }
     const newDaySelections = R.mapObjIndexed(mergeDayWithMouseSelection)(state[id])
     return R.assoc(id, newDaySelections, state)
