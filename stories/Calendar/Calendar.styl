@@ -1,10 +1,9 @@
 .Calendar
   $c = {
     text: #6C464F
-    border: #2C4251
+    border: #C1C1C1
     cell: #9E768F
     cellActive: #6C464F
-    reserve: #C1C1C1
   }
   
   switchColorSet(activeSelector)
@@ -33,7 +32,7 @@
     height: 50px
     vertical-align: middle
     text-align center
-    border: 1px solid $c.reserve
+    border: 1px solid $c.border
     switchColorSet('.isSelected')
   
   &__dayKey
@@ -67,6 +66,10 @@
       bottom 0
       left -1px
       height: 10px
-      border-left: 2px solid $c.border
+      border-left: 2px solid $c.cellActive
 
+  tbody > div > span // react-selection (selection area)
+    border-color: $c.border !important
     
+
+

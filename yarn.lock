@@ -3633,6 +3633,10 @@ react-redux:
     lodash-es "^4.2.0"
     loose-envify "^1.1.0"
 
+react-selectable:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/react-selectable/-/react-selectable-1.1.0.tgz#ae4b562f89d949b9c6b382949b137c54eac5beb2"
+
 react-simple-di@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/react-simple-di/-/react-simple-di-1.2.0.tgz#dde0e5bf689f391ef2ab02c9043b213fe239c6d0"

@@ -6,11 +6,12 @@ import {toArray} from 'lodash'
 import './Calendar.styl'
 import {connect} from 'react-redux'
 import {
-  utils,
+  util,
   DAY_KEYS, DAY_HOURS_LIST, MINUTES_IN_HOUR, MINUTES_IN_DAY,
   actions as calendarActions
 } from './calendar-reducer'
 import cls from 'classnames'
+import { SelectableGroup, createSelectable } from 'react-selectable';
 
 
 export class Calendar extends Component {
@@ -38,13 +39,6 @@ export class Calendar extends Component {
     const {initialSelectionData, initCalendarSelection, hourScaleGap} = this.props
     initCalendarSelection(initialSelectionData)
   }
-  componentWillUpdate (nextProps, nextState) {
-    const {selectionRange, add2dSelection} = this.props  
-    if (nextProps.selectionRange !== selectionRange && nextProps.selectionRange.isComplete) {
-      add2dSelection(selectionRange)
-    }
-  }
-
   toReadableHourLabel(hour) {
     const {hourLabelFormat} = this.props
     const label = new Date()
@@ -54,19 +48,13 @@ export class Calendar extends Component {
   }
   rDayHour ({selections, dayKey, dayIdx}) {
     const {bemBlockName, toggleHourSelection, mouseSelectionEnd, mouseSelectionStart} = this.props
-    return (hour) => {
-      const owningSelectionIdx = R.findIndex(utils.findHourOwningSelection(hour), selections)
+    return ({hour}) => {
+      const owningSelectionIdx = R.findIndex(util.findHourOwningSelection(hour), selections)
       const owningSelection = selections[owningSelectionIdx]
       return <td
         className={cls(`${bemBlockName}__cell ${bemBlockName}__dayHour`, {
           isSelected: owningSelection
         })}
-        onMouseOver={({shiftKey}) => {
-          const cellCoords = {x: hour, y: dayIdx}
-          shiftKey 
-            ? mouseSelectionEnd(cellCoords)
-            : mouseSelectionStart(cellCoords)
-        }}
         onClick={R.partial(toggleHourSelection, [{
           dayKey, hour, owningSelection, owningSelectionIdx
         }])}
@@ -77,7 +65,9 @@ export class Calendar extends Component {
     const {hourScaleGap, bemBlockName, toggleDaySelection, selectionData} = this.props
     const dayIdx = R.findIndex(R.equals(dayKey), DAY_KEYS)
     const isAnyHourSelected = selections.length
-    const isAllDaySelected = isAnyHourSelected && R.pipe(R.head, utils.checkAllDaySelection)(selections)
+    const isAllDaySelected = isAnyHourSelected && R.pipe(R.head, util.checkAllDaySelection)(selections)
+    const Hour = this.rDayHour({selections, dayKey, dayIdx})
+    const SelectableHour = createSelectable(Hour)
     const row = {
       label: <td
         className={cls(`${bemBlockName}__cell ${bemBlockName}__dayKey`, {
@@ -92,7 +82,13 @@ export class Calendar extends Component {
         onClick={R.partial(toggleDaySelection, [{dayKey, isAllDaySelected}])}
         >{isAllDaySelected ? '-' : '+'}</td>,
 
-      hours: R.map(this.rDayHour({selections, dayKey, dayIdx}), DAY_HOURS_LIST)
+      hours: R.map((hour) => {
+        return <SelectableHour 
+          selectableKey={{dayKey, hour}} 
+          key={`${dayKey}${hour}`} 
+          hour={hour} 
+        />
+      }, DAY_HOURS_LIST)
     }
     return <tr key={dayKey}>
       {row.label}
@@ -133,18 +129,24 @@ export class Calendar extends Component {
     </tr>
   }
   render () {
-    const {selectionData, bemBlockName} = this.props
+    const {selectionData, bemBlockName, selectHoursWithMouse} = this.props
+
     const bodyRows = R.pipe(R.mapObjIndexed(this.rDay), toArray)(selectionData)
     const headRow = this.rCaption()
     return (
-      <table className={`${bemBlockName}`}>
-        <thead>
-          {headRow}
-        </thead>
-        <tbody>
-          {bodyRows}
-        </tbody>
-      </table>
+        <table className={`${bemBlockName}`}>
+          <thead>
+            {headRow}
+          </thead>
+          <SelectableGroup 
+            selectOnMouseMove={false}
+            tolerance={1}
+            onSelection={(selection) => selectHoursWithMouse(selection)}
+            component="tbody"
+            >
+            {bodyRows}
+          </SelectableGroup>
+        </table>
     )
   }
 }
@@ -152,8 +154,7 @@ export class Calendar extends Component {
 export default R.pipe(
   connect(
     (state) => ({
-      selectionData: state.calendar.selectionData,
-      selectionRange: state.calendar.selectionRange,
+      selectionData: state.calendar
     }),
     calendarActions
   )

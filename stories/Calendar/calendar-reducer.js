@@ -6,7 +6,7 @@ import R from 'ramda'
 // ------------------------------------
 // Utils
 // ------------------------------------
-export const utils = {
+export const util = {
   findHourOwningSelection: (hour) => ({bt, et}) => {
     const minutes = hour * MINUTES_IN_HOUR
     return minutes >= bt && minutes < et
@@ -16,16 +16,19 @@ export const utils = {
   ,collapseAtomicSelections: R.reduce((acc, next) => {
     const currentIdx = acc.length - 1
     const current = acc[currentIdx]
-    return current && next && (current.et + 1 === next.bt)
-      ? R.update(currentIdx, R.assoc('et', next.et, current), acc)
-      : R.append(next, acc)
+    return !current || !next || current.et + 1 < next.bt
+      ? R.append(next, acc)
+      : R.update(currentIdx, {
+                              bt: R.min(current.bt, next.bt),
+                              et: R.max(current.et, next.et)
+                            }, acc)
   }, []),
   checkAllDaySelection: (sel) => sel && sel.bt === 0 && sel.et === MINUTES_IN_DAY - 1
 }
 
-utils.genHourlyBreakedSelection = (selection) => (hourIncrement) => {
+util.genHourlyBreakedSelection = (selection) => (hourIncrement) => {
   const eachHour = hourIncrement + selection.bt / MINUTES_IN_HOUR
-  return utils.genAtomicSelection(eachHour)
+  return util.genAtomicSelection(eachHour)
 }
 
 // ------------------------------------
@@ -41,10 +44,7 @@ const INIT_CALENDAR_SELECTION = NAMESPACE + 'INIT_CALENDAR_SELECTION'
 const CLEAR_CALENDAR_SELECTION = NAMESPACE + 'CLEAR_CALENDAR_SELECTION'
 const TOGGLE_HOUR_SELECTION = NAMESPACE + 'TOGGLE_HOUR_SELECTION'
 const TOGGLE_DAY_SELECTION = NAMESPACE + 'TOGGLE_DAY_SELECTION'
-const ADD_2D_SELECTION = NAMESPACE + 'ADD_2D_SELECTION'
-
-const MOUSE_SELECTION_START = NAMESPACE + 'MOUSE_SELECTION_START'
-const MOUSE_SELECTION_END = NAMESPACE + 'MOUSE_SELECTION_END'
+const SELECT_HOURS_WITH_MOUSE = NAMESPACE + 'SELECT_HOURS_WITH_MOUSE'
 
 // ------------------------------------
 // Actions
@@ -64,31 +64,21 @@ const toggleDaySelection = (payload) => ({
   type: TOGGLE_DAY_SELECTION,
   payload: payload
 })
-const add2dSelection = (payload) => ({
-  type: ADD_2D_SELECTION,
-  payload: payload
+const selectHoursWithMouse = (mouseSelection) => ({
+  type: SELECT_HOURS_WITH_MOUSE,
+  payload: {mouseSelection}
 })
-
-const mouseSelectionStart = (payload) => ({
-  type: MOUSE_SELECTION_START,
-  payload: payload
-})
-const mouseSelectionEnd = (payload) => ({
-  type: MOUSE_SELECTION_END,
-  payload: payload
-})
-
 
 
 export const actions = {
-  initCalendarSelection, clearCalendarSelection, toggleHourSelection, toggleDaySelection, add2dSelection,
-  mouseSelectionStart, mouseSelectionEnd
+  initCalendarSelection, clearCalendarSelection, toggleHourSelection, toggleDaySelection, selectHoursWithMouse
 }
 
 // ------------------------------------
 // Selection data reducer
 // ------------------------------------
-const selectionDataReducer = createReducer({}, {
+
+export default createReducer({}, {
   [INIT_CALENDAR_SELECTION]: (state, {selectionData}) => selectionData
   ,[CLEAR_CALENDAR_SELECTION]: (state) => {}
   ,[TOGGLE_DAY_SELECTION]: (state, {dayKey, isAllDaySelected}) => {
@@ -103,60 +93,39 @@ const selectionDataReducer = createReducer({}, {
     if (owningSelection) {
       const owningSelectionDuration = (owningSelection.et + 1 - owningSelection.bt) / MINUTES_IN_HOUR
       const hourlyBreakedOwningSelection = R.times(
-        utils.genHourlyBreakedSelection(owningSelection),
+        util.genHourlyBreakedSelection(owningSelection),
         owningSelectionDuration
       )
-      const owningWithoutDeselected = R.reject(utils.findHourOwningSelection(hour), hourlyBreakedOwningSelection)
+      const owningWithoutDeselected = R.reject(util.findHourOwningSelection(hour), hourlyBreakedOwningSelection)
       daySelectedRangeNew = R.pipe(
         R.update(owningSelectionIdx, owningWithoutDeselected),
         R.flatten
       )(daySelectedRange)
     }
     else {
-      const selectedRange = utils.genAtomicSelection(hour)
+      const selectedRange = util.genAtomicSelection(hour)
       daySelectedRangeNew = R.pipe(
         R.append(selectedRange),
         R.sortBy(R.prop('bt')) // for proper `collapse` applying
       )(daySelectedRange)
     }
-    const collapsedSelections = utils.collapseAtomicSelections(daySelectedRangeNew)
+    const collapsedSelections = util.collapseAtomicSelections(daySelectedRangeNew)
     return R.assoc(dayKey, collapsedSelections, state)
   }
-  ,[ADD_2D_SELECTION]: (state, {startX, startY, endX, endY}) => {
-    return R.mapObjIndexed(
-      (daySelection, dayKey) => {
-        const dayIdx = R.findIndex(R.equals(dayKey), DAY_KEYS)
-        console.log(dayIdx, startY, endY, `dayKey---------`)
-        if (
-          (dayIdx >= startY && dayIdx <= endY) || (dayIdx <= endY && dayIdx >= startY)
-          ) {
-          const a = R.pipe(
-            R.append(utils.genAtomicSelectionRange(startX, endX)),
-            R.sortBy(R.prop('bt')),
-            utils.collapseAtomicSelections
-          )(daySelection)
-          return a
-        } else {
-          return daySelection
-        }
-      },
-      state
-    )
+  ,[SELECT_HOURS_WITH_MOUSE]: (state, {mouseSelection}) => {
+    const mergeDayWithMouseSelection = (daySelections, dayKey) => {
+      const selectionsToMerge = R.pipe(
+        R.filter(R.propEq('dayKey', dayKey)),
+        R.map(R.pipe(R.prop('hour'), util.genAtomicSelection)),
+      )(mouseSelection)
+
+      const mergedAndCollapsedSelections = R.pipe(
+        R.concat(R.__, selectionsToMerge),
+        R.sortBy(R.prop('bt')),
+        util.collapseAtomicSelections
+      )(daySelections)
+      return mergedAndCollapsedSelections 
+    }
+    return R.mapObjIndexed(mergeDayWithMouseSelection)(state)
   }
-
-})
-
-
-
-/* -----------------------------
-  Selection range reducer
------------------------------ */
-const selectionRangeReducer = createReducer({}, {
-  [MOUSE_SELECTION_START]: (state, {x, y}) => ({startX: x, startY: y})
-  ,[MOUSE_SELECTION_END]: (state, {x, y}) => ({...state, endX: x, endY: y, isComplete: true})
-})
-
-export default combineReducers({
-  selectionData: selectionDataReducer,
-  selectionRange: selectionRangeReducer
 })
