@@ -5,11 +5,8 @@ import dateUtil from 'date-format-utils'
 import { toArray } from 'lodash'
 import './Calendar.styl'
 import { connect } from 'react-redux'
-import {
-  util,
-  DAY_KEYS, DAY_HOURS_LIST, MINUTES_IN_HOUR, MINUTES_IN_DAY, EMPTY_DAYS_SELECTION,
-  actions as calendarActions
-} from './calendar-reducer'
+import {util, CONSTANTS} from './utils'
+import {actions as calendarActions} from './calendar-reducer'
 import cls from 'classnames'
 import { SelectableGroup, createSelectable } from 'react-selectable'
 
@@ -27,7 +24,7 @@ export class Calendar extends Component {
     hourScaleGap: 3,
     hourLabelFormat: 'HH:mm', // https://www.npmjs.com/package/date-format-utils
     bemBlockName: 'Calendar',
-    initialSelectionData: EMPTY_DAYS_SELECTION
+    initialSelectionData: CONSTANTS.EMPTY_DAYS_SELECTION
   }
   constructor (props) {
     super(props)
@@ -65,7 +62,7 @@ export class Calendar extends Component {
   }
   rDay (selections, dayKey) {
     const { id, hourScaleGap, bemBlockName, toggleDaySelection, selectionData } = this.props
-    const dayIdx = R.findIndex(R.equals(dayKey), DAY_KEYS)
+    const dayIdx = R.findIndex(R.equals(dayKey), CONSTANTS.DAY_KEYS)
     const isAnyHourSelected = selections.length
     const isAllDaySelected = isAnyHourSelected && R.pipe(R.head, util.checkAllDaySelection)(selections)
     const SelectableHour = createSelectable(this.rDayHour({ selections, dayKey, dayIdx }))
@@ -89,7 +86,7 @@ export class Calendar extends Component {
           key={`${dayKey}${hour}`}
           hour={hour}
         />
-      }, DAY_HOURS_LIST)
+      }, CONSTANTS.DAY_HOURS_LIST)
     }
     return <tr key={dayKey}>
       {row.label}
@@ -121,7 +118,7 @@ export class Calendar extends Component {
       hours: R.pipe(
         R.filter(hour => !(hour % hourScaleGap)),
         R.map(this.rCaptionHours)
-      )(DAY_HOURS_LIST)
+      )(CONSTANTS.DAY_HOURS_LIST)
     }
     return <tr>
       {caption.label}

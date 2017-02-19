@@ -1,47 +1,10 @@
 import createReducer from 'create-reducer-map'
 import R from 'ramda'
-// import {Calendar} from './Calendar'
-
-// ------------------------------------
-// Utils
-// ------------------------------------
-export const util = {
-  findHourOwningSelection: (hour) => ({ bt, et }) => {
-    const minutes = hour * MINUTES_IN_HOUR
-    return minutes >= bt && minutes < et
-  },
-  genAtomicSelection: (hour) => ({ bt: hour * MINUTES_IN_HOUR, et: (hour + 1) * MINUTES_IN_HOUR - 1 }),
-  genAtomicSelectionRange: (h1, h2) => ({ bt: h1 * MINUTES_IN_HOUR, et: h2 * MINUTES_IN_HOUR - 1 }),
-  collapseAtomicSelections: R.reduce((acc, next) => {
-    const currentIdx = acc.length - 1
-    const current = acc[currentIdx]
-    return !current || !next || current.et + 1 < next.bt
-      ? R.append(next, acc)
-      : R.update(currentIdx, {
-        bt: R.min(current.bt, next.bt),
-        et: R.max(current.et, next.et)
-      }, acc)
-  }, []),
-  checkAllDaySelection: (sel) => sel && sel.bt === 0 && sel.et === MINUTES_IN_DAY - 1
-}
-
-util.genHourlyBreakedSelection = (selection) => (hourIncrement) => {
-  const eachHour = hourIncrement + selection.bt / MINUTES_IN_HOUR
-  return util.genAtomicSelection(eachHour)
-}
+import {util, CONSTANTS} from './utils'
 
 // ------------------------------------
 // Constants
 // ------------------------------------
-export const DAY_HOURS_LIST = R.range(0, 24)
-export const DAY_KEYS = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su']
-export const MINUTES_IN_HOUR = 60
-export const MINUTES_IN_DAY = DAY_HOURS_LIST.length * MINUTES_IN_HOUR
-export const EMPTY_DAYS_SELECTION = R.pipe(
-  R.map((key) => [key, []]),
-  R.fromPairs
-)(DAY_KEYS)
-
 const NAMESPACE = 'calendar/'
 const INIT_CALENDAR_SELECTION = NAMESPACE + 'INIT_CALENDAR_SELECTION'
 const CLEAR_CALENDAR_SELECTION = NAMESPACE + 'CLEAR_CALENDAR_SELECTION'
@@ -83,19 +46,19 @@ export const actions = {
 export default createReducer({}, {
   [INIT_CALENDAR_SELECTION]: (state, { id, initialSelectionData }) => R.assoc(id, initialSelectionData, state),
 
-  [CLEAR_CALENDAR_SELECTION]: (state, { id }) => R.assoc(id, EMPTY_DAYS_SELECTION, state),
+  [CLEAR_CALENDAR_SELECTION]: (state, { id }) => R.assoc(id, CONSTANTS.EMPTY_DAYS_SELECTION, state),
 
   [TOGGLE_DAY_SELECTION]: (state, { id, dayKey, isAllDaySelected }) => {
     const day = isAllDaySelected
       ? []
-      : [{ bt: 0, et: MINUTES_IN_DAY - 1 }]
+      : [{ bt: 0, et: CONSTANTS.MINUTES_IN_DAY - 1 }]
     return R.assocPath([id, dayKey], day, state)
   },
   [TOGGLE_HOUR_SELECTION]: (state, { id, dayKey, hour, owningSelection, owningSelectionIdx }) => {
     const daySelectedRange = R.path([id, dayKey], state)
     let daySelectedRangeNew
     if (owningSelection) {
-      const owningSelectionDuration = (owningSelection.et + 1 - owningSelection.bt) / MINUTES_IN_HOUR
+      const owningSelectionDuration = (owningSelection.et + 1 - owningSelection.bt) / CONSTANTS.MINUTES_IN_HOUR
       const hourlyBreakedOwningSelection = R.times(
         util.genHourlyBreakedSelection(owningSelection),
         owningSelectionDuration
