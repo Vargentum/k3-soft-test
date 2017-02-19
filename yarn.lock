@@ -4,7 +4,7 @@
   version "1.4.7"
   resolved "https://registry.yarnpkg.com/@kadira/react-split-pane/-/react-split-pane-1.4.7.tgz#6d753d4a9fe62fe82056e323a6bcef7f026972b5"
 
-"@kadira/storybook-addon-actions@^1.0.2":
+"@kadira/storybook-addon-actions", "@kadira/storybook-addon-actions@^1.0.2":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@kadira/storybook-addon-actions/-/storybook-addon-actions-1.1.1.tgz#5053485583fadea413710d6405454dc168a7efc7"
   dependencies:

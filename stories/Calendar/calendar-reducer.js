@@ -122,7 +122,7 @@ export default createReducer({}, {
     const mergeDayWithMouseSelection = (daySelections, dayKey) => {
       const selectionsToMerge = R.pipe(
         R.filter(R.propEq('dayKey', dayKey)),
-        R.map(R.pipe(R.prop('hour'), util.genAtomicSelection)),
+        R.map(R.pipe(R.prop('hour'), util.genAtomicSelection))
       )(mouseSelection)
 
       const mergedAndCollapsedSelections = R.pipe(

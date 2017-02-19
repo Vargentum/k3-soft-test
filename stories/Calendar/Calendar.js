@@ -18,13 +18,13 @@ export class Calendar extends Component {
   static propTypes = {
     id: PT.string.isRequired,
     initialSelectionData: PT.object,
-    onDateSet: PT.func,
+    onSelectionSave: PT.func,
     hourScaleGap: PT.number,
     hourLabelFormat: PT.string,
     bemBlockName: PT.string
   }
   static defaultProps = {
-    onDateSet: R.identity,
+    onSelectionSave: R.identity,
     hourScaleGap: 3,
     hourLabelFormat: 'HH:mm', // https://www.npmjs.com/package/date-format-utils
     bemBlockName: 'Calendar',
@@ -34,7 +34,8 @@ export class Calendar extends Component {
     super(props);
     this.rDay = this.rDay.bind(this)
     this.rCaptionHours = this.rCaptionHours.bind(this)
-    this.handleClear = this.handleClear.bind(this)
+    this.handleSelectionClear = this.handleSelectionClear.bind(this)
+    this.handleSelectionSave = this.handleSelectionSave.bind(this)
     this.handleMouseSelection = this.handleMouseSelection.bind(this)
   }
   componentWillMount () {
@@ -129,9 +130,13 @@ export class Calendar extends Component {
       {caption.hours}
     </tr>
   }
-  handleClear() {
+  handleSelectionClear() {
     const {id, clearCalendarSelection} = this.props    
     clearCalendarSelection({id})
+  }
+  handleSelectionSave() {
+    const {id, selectionData, onSelectionSave} = this.props    
+    onSelectionSave({id, selectionData})
   }
   handleMouseSelection(mouseSelection) {
     const {id, selectHoursWithMouse} = this.props
@@ -158,7 +163,8 @@ export class Calendar extends Component {
           </SelectableGroup>
         </table>
         <br />
-        <button onClick={this.handleClear}>Clear all</button>
+        <button onClick={this.handleSelectionClear}>Clear</button>
+        <button onClick={this.handleSelectionSave}>Save</button>
       </div>
     )
   }
