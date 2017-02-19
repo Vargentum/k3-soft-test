@@ -1,7 +1,7 @@
 {
   "name": "k3-soft-test",
   "version": "1.0.0",
-  "description": "",
+  "description": "Skill-proof app for k3-soft Middle front-end dev position",
   "main": "index.js",
   "scripts": {
     "storybook": "start-storybook -p 6006",
@@ -12,6 +12,10 @@
   },
   "author": "Vargentum <vargentum@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vargentum/k3-soft-test"
+  },
   "dependencies": {
     "classnames": "^2.2.5",
     "create-reducer-map": "^0.1.4",
